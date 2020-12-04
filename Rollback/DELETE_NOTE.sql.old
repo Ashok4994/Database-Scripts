@@ -1,0 +1,62 @@
+DECLARE
+  V_COUNT                 NUMBER;
+  V_TABLE                 VARCHAR2(500);
+  V_WEB_MESSAGE_TYPE_ID   T_LU_WEB_MESSAGE_TYPE.WEB_MESSAGE_TYPE_ID%TYPE;
+  
+  TYPE T_MESSAGE_TYPE IS VARRAY(7) OF T_LU_WEB_MESSAGE_TYPE.WEB_MESSAGE_TYPE%TYPE;
+  
+  A_MESSAGE_TYPES T_MESSAGE_TYPE := 
+    T_MESSAGE_TYPE(
+         'MsgNameChangeFormSubmissionConfirmation',
+         'MsgPowerOfAttorneyFormSubmissionConfirmation',
+         'MsgSCRAFormSubmissionConfirmation',
+         'MsgPaymentVerificationFormSubmissionConfirmation',
+         'MsgIdentityVerificationFormSubmissionConfirmation',
+         'MsgOtherInquiriesFormSubmissionConfirmation',
+         'MsgFormSubmissionFailure'                  
+  );
+
+BEGIN
+  
+ FOR MT_INDEX in 1..A_MESSAGE_TYPES.COUNT LOOP  
+
+     V_WEB_MESSAGE_TYPE_ID := -1;
+
+     --Delete in table T_WEB_MESSAGE_VERSION
+     V_TABLE := 'T_WEB_MESSAGE_VERSION';
+     -- Get ID
+     SELECT   NVL(WEB_MESSAGE_TYPE_ID,-1)
+     INTO     V_WEB_MESSAGE_TYPE_ID
+     FROM     T_LU_WEB_MESSAGE_TYPE 
+     WHERE    WEB_MESSAGE_TYPE = A_MESSAGE_TYPES(MT_INDEX);
+     
+     -- Check if record already exists
+     SELECT   COUNT(1)
+     INTO     V_COUNT
+     FROM     T_WEB_MESSAGE_VERSION 
+     WHERE    WEB_MESSAGE_TYPE_ID = V_WEB_MESSAGE_TYPE_ID;
+                        
+     IF V_COUNT = 1 THEN
+        DELETE FROM T_WEB_MESSAGE_VERSION WHERE WEB_MESSAGE_TYPE_ID = V_WEB_MESSAGE_TYPE_ID;
+      DBMS_OUTPUT.PUT_LINE('A record with ' || V_WEB_MESSAGE_TYPE_ID || ' id in ' || V_TABLE || ' table did exist. The record was deleted.');
+     ELSE
+        DBMS_OUTPUT.PUT_LINE('A record with ' || V_WEB_MESSAGE_TYPE_ID || ' id in ' || V_TABLE || ' table did not exist. No data was changed.');
+     END IF; 
+     
+     --Delete in table T_LU_WEB_MESSAGE_TYPE
+     V_TABLE := 'T_LU_WEB_MESSAGE_TYPE';                         
+     IF V_WEB_MESSAGE_TYPE_ID != -1 THEN
+        DELETE FROM T_LU_WEB_MESSAGE_TYPE WHERE WEB_MESSAGE_TYPE_ID = V_WEB_MESSAGE_TYPE_ID;	  
+        DBMS_OUTPUT.PUT_LINE('A record with ' || A_MESSAGE_TYPES(MT_INDEX) || ' code in ' || V_TABLE || ' table did exist. The record was deleted.');
+     ELSE
+        DBMS_OUTPUT.PUT_LINE('A record with ' || A_MESSAGE_TYPES(MT_INDEX) || ' code in ' || V_TABLE || ' table did not exist. No data was changed.');
+     END IF;
+    
+  COMMIT;
+     
+END LOOP; 
+
+END;
+
+/
+      
